@@ -4,11 +4,13 @@ from src.core.database import get_session
 from src.repository.catalog_repository import CatalogRepository
 from src.services.catalog_service import CatalogService
 from src.dto.product_schema import CreateProductRequest, UpdateProductRequest
+from src.core.security import verify_token
 
 # This is equivalent to `const catalogRouter = express.Router();`
 router = APIRouter(
     prefix="/products",
-    tags=["Products"]
+    tags=["Products"],
+    dependencies=[Depends(verify_token)]
 )
 
 # ==========================================

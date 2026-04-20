@@ -1,7 +1,12 @@
+import os
 from contextlib import asynccontextmanager
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from src.api.catalog_routes import router as catalog_router
 from src.core.database import create_db_and_tables
+
+load_dotenv()
+APP_PORT = int(os.getenv("APP_PORT", 8001))
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -27,4 +32,4 @@ def read_health():
 if __name__ == "__main__":
     import uvicorn
     # This acts like `app.listen(8001, ...)` in Express
-    uvicorn.run("main:app", host="127.0.0.1", port=8001, reload=True)
+    uvicorn.run("main:app", host="127.0.0.1", port=APP_PORT, reload=True)

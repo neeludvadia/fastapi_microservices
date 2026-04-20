@@ -1,2 +1,6 @@
-fastapi
+fastapi[standard]
 uvicorn[standard]
+sqlmodel
+psycopg2-binary
+python-dotenv
+httpx
