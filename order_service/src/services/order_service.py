@@ -2,13 +2,14 @@ import uuid
 from fastapi import HTTPException, status
 from src.repository.order_repository import OrderRepository
 from src.repository.cart_repository import CartRepository
+from src.broker.kafka_producer import get_kafka_producer
 
 class OrderService:
     def __init__(self, order_repo: OrderRepository, cart_repo: CartRepository):
         self.order_repo = order_repo
         self.cart_repo = cart_repo
 
-    def create_order(self, customer_id: int):
+    async def create_order(self, customer_id: int):
         cart = self.cart_repo.find_cart_by_customer_id(customer_id)
         if not cart or not cart.line_items:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cart is empty")
@@ -38,7 +39,22 @@ class OrderService:
         # Clear Cart
         self.cart_repo.clear_cart_data(cart.id)
         
-        # In the future, emit Kafka OrderCreated event here
+        # Emit Kafka OrderCreated event
+        producer = get_kafka_producer()
+        event_payload = {
+            "order_id": order.id,
+            "order_number": order.order_number,
+            "customer_id": order.customer_id,
+            "amount": order.amount,
+            "items": [
+                {
+                    "product_id": item.product_id,
+                    "qty": item.qty,
+                    "price": item.price
+                } for item in cart.line_items
+            ]
+        }
+        await producer.send_message("order_events", {"event": "OrderCreated", "data": event_payload})
 
         return order
 

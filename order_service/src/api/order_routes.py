@@ -17,7 +17,7 @@ def get_order_service(session: Session = Depends(get_session)) -> OrderService:
     return OrderService(order_repo, cart_repo)
 
 @router.post("/orders")
-def create_order(
+async def create_order(
     token_data: dict = Depends(verify_token),
     service: OrderService = Depends(get_order_service)
 ):
@@ -25,7 +25,7 @@ def create_order(
     if not customer_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
         
-    return service.create_order(int(customer_id))
+    return await service.create_order(int(customer_id))
 
 @router.get("/order/{id}")
 def get_order(
