@@ -21,7 +21,7 @@ async def create_order(
     token_data: dict = Depends(verify_token),
     service: OrderService = Depends(get_order_service)
 ):
-    customer_id = token_data.get("sub")
+    customer_id = token_data.get("sub") or token_data.get("id")
     if not customer_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
         
@@ -50,7 +50,7 @@ def get_orders(
     token_data: dict = Depends(verify_token),
     service: OrderService = Depends(get_order_service)
 ):
-    customer_id = token_data.get("sub")
+    customer_id = token_data.get("sub") or token_data.get("id")
     return service.get_orders(int(customer_id))
 
 @router.patch("/order/{id}")

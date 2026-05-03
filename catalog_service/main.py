@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from src.api.catalog_routes import router as catalog_router
 from src.core.database import create_db_and_tables
+from src.broker.kafka_consumer import get_kafka_consumer
+from src.services.elasticsearch_service import get_elasticsearch_service
 
 load_dotenv()
 APP_PORT = int(os.getenv("APP_PORT", 8001))
@@ -12,7 +14,15 @@ APP_PORT = int(os.getenv("APP_PORT", 8001))
 async def lifespan(app: FastAPI):
     # This runs when the server boots up (like prisma db push)
     create_db_and_tables()
+    
+    es_service = get_elasticsearch_service()
+    await es_service.setup_index()
+    
+    consumer = get_kafka_consumer()
+    await consumer.start()
     yield
+    await consumer.stop()
+    await es_service.close()
 
 # This is analogous to "const app = express();"
 app = FastAPI(

@@ -22,7 +22,7 @@ def add_to_cart(
     token_data: dict = Depends(verify_token),
     service: CartService = Depends(get_cart_service)
 ):
-    customer_id = token_data.get("sub")
+    customer_id = token_data.get("sub") or token_data.get("id")
     if not customer_id:
         from fastapi import HTTPException, status
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
@@ -35,7 +35,7 @@ def get_cart(
     token_data: dict = Depends(verify_token),
     service: CartService = Depends(get_cart_service)
 ):
-    customer_id = token_data.get("sub")
+    customer_id = token_data.get("sub") or token_data.get("id")
     response = service.get_cart(int(customer_id))
     return response
 
@@ -46,7 +46,7 @@ def update_cart_item(
     token_data: dict = Depends(verify_token),
     service: CartService = Depends(get_cart_service)
 ):
-    customer_id = token_data.get("sub")
+    customer_id = token_data.get("sub") or token_data.get("id")
     response = service.edit_cart(int(customer_id), line_item_id, data)
     return response
 
@@ -56,6 +56,6 @@ def delete_cart_item(
     token_data: dict = Depends(verify_token),
     service: CartService = Depends(get_cart_service)
 ):
-    customer_id = token_data.get("sub")
+    customer_id = token_data.get("sub") or token_data.get("id")
     response = service.delete_cart_item(int(customer_id), line_item_id)
     return response
