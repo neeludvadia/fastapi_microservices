@@ -5,11 +5,14 @@ from src.core.security import verify_token
 from src.repository.user_repository import UserRepository
 from src.services.user_service import UserService
 from src.dto.user_schema import RegisterRequest, LoginRequest
+from src.core.rate_limiter import rate_limiter
 
 # Equivalent to `const router = express.Router()` + `app.use("/auth", router)`
+# Rate limited to 10 requests per minute (auth endpoints need strict limits)
 router = APIRouter(
     prefix="/auth",
-    tags=["Auth"]
+    tags=["Auth"],
+    dependencies=[Depends(rate_limiter(max_requests=10, window_seconds=60))]
 )
 
 # ==========================================

@@ -7,3 +7,4 @@ httpx
 aiokafka
 elasticsearch<9
 aiohttp
+redis

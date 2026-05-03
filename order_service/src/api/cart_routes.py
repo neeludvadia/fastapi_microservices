@@ -5,11 +5,12 @@ from src.core.security import verify_token
 from src.repository.cart_repository import CartRepository
 from src.services.cart_service import CartService
 from src.dto.cart_schema import CartRequestInput, EditCartRequest
+from src.core.rate_limiter import rate_limiter
 
 router = APIRouter(
     prefix="/cart",
     tags=["Cart"],
-    dependencies=[Depends(verify_token)]
+    dependencies=[Depends(verify_token), Depends(rate_limiter(max_requests=30, window_seconds=60))]
 )
 
 def get_cart_service(session: Session = Depends(get_session)) -> CartService:

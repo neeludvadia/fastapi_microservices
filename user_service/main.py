@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from src.api.auth_routes import router as auth_router
 from src.core.database import create_db_and_tables
+from src.core.rate_limiter import get_redis_client, close_redis_client
 
 load_dotenv()
 APP_PORT = int(os.getenv("APP_PORT", 7000))
@@ -11,9 +12,15 @@ APP_PORT = int(os.getenv("APP_PORT", 7000))
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # This runs when the server boots up
-    # Equivalent to the db.sql CREATE TABLE that the Node.js version relied on
     create_db_and_tables()
+    
+    # Initialize Redis connection for rate limiting
+    await get_redis_client()
+    
     yield
+    
+    # Cleanup Redis connection
+    await close_redis_client()
 
 # Equivalent to `const app = express()`
 app = FastAPI(
