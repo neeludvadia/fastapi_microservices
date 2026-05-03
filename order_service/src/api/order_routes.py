@@ -6,9 +6,11 @@ from src.repository.order_repository import OrderRepository
 from src.repository.cart_repository import CartRepository
 from src.services.order_service import OrderService
 from src.dto.order_schema import UpdateOrderStatusRequest
+from src.core.rate_limiter import rate_limiter
 
 router = APIRouter(
-    tags=["Orders"]
+    tags=["Orders"],
+    dependencies=[Depends(rate_limiter(max_requests=30, window_seconds=60))]
 )
 
 def get_order_service(session: Session = Depends(get_session)) -> OrderService:

@@ -6,6 +6,7 @@ from src.api.catalog_routes import router as catalog_router
 from src.core.database import create_db_and_tables
 from src.broker.kafka_consumer import get_kafka_consumer
 from src.services.elasticsearch_service import get_elasticsearch_service
+from src.core.rate_limiter import get_redis_client, close_redis_client
 
 load_dotenv()
 APP_PORT = int(os.getenv("APP_PORT", 8001))
@@ -20,9 +21,15 @@ async def lifespan(app: FastAPI):
     
     consumer = get_kafka_consumer()
     await consumer.start()
+    
+    # Initialize Redis connection for rate limiting
+    await get_redis_client()
+    
     yield
+    
     await consumer.stop()
     await es_service.close()
+    await close_redis_client()
 
 # This is analogous to "const app = express();"
 app = FastAPI(

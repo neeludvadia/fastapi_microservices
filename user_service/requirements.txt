@@ -1,7 +1,9 @@
 fastapi[standard]
+fastapi[standard]
 uvicorn[standard]
 sqlmodel
 psycopg2-binary
 python-dotenv
 bcrypt
 python-jose[cryptography]
+redis

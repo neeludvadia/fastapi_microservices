@@ -6,12 +6,14 @@ from src.services.catalog_service import CatalogService
 from src.services.elasticsearch_service import get_elasticsearch_service
 from src.dto.product_schema import CreateProductRequest, UpdateProductRequest
 from src.core.security import verify_token
+from src.core.rate_limiter import rate_limiter
 
 # This is equivalent to `const catalogRouter = express.Router();`
+# Rate limited to 100 requests per minute (read-heavy, generous limit)
 router = APIRouter(
     prefix="/products",
     tags=["Products"],
-    dependencies=[Depends(verify_token)]
+    dependencies=[Depends(verify_token), Depends(rate_limiter(max_requests=100, window_seconds=60))]
 )
 
 # ==========================================
