@@ -39,22 +39,23 @@ class OrderService:
         # Clear Cart
         self.cart_repo.clear_cart_data(cart.id)
         
-        # Emit Kafka OrderCreated event
+        # Emit Kafka CREATE_ORDER event
         producer = get_kafka_producer()
         event_payload = {
-            "order_id": order.id,
-            "order_number": order.order_number,
-            "customer_id": order.customer_id,
-            "amount": order.amount,
-            "items": [
+            "orderNumber": order.order_number,
+            "customerId": order.customer_id,
+            "amount": str(order.amount),
+            "status": order.status,
+            "orderItems": [
                 {
-                    "product_id": item.product_id,
+                    "productId": item.product_id,
+                    "itemName": item.item_name,
                     "qty": item.qty,
-                    "price": item.price
+                    "price": str(item.price)
                 } for item in cart.line_items
             ]
         }
-        await producer.send_message("order_events", {"event": "OrderCreated", "data": event_payload})
+        await producer.send_message("CatalogEvents", {"event": "CREATE_ORDER", "data": event_payload})
 
         return order
 
@@ -90,3 +91,27 @@ class OrderService:
             "checkout_url": f"http://localhost:8000/checkout/{order.order_number}",
             "amount": order.amount
         }
+
+    async def handle_broker_message(self, message: dict):
+        event = message.get("event")
+        data = message.get("data", {})
+        
+        if event == "CREATE_PAYMENT":
+            order_number = data.get("orderNumber") or data.get("order_number")
+            status_str = data.get("status")
+            txn_id = data.get("paymentLog", {}).get("id") if isinstance(data.get("paymentLog"), dict) else data.get("txn_id")
+            
+            if order_number:
+                order = self.order_repo.find_order_by_number(int(order_number))
+                if order:
+                    updated_status = "succeeded" if status_str in ("succeeded", "success") else "failed"
+                    order.status = updated_status
+                    if txn_id:
+                        order.txn_id = txn_id
+                    self.order_repo.session.add(order)
+                    self.order_repo.session.commit()
+                    self.order_repo.session.refresh(order)
+                    print(f"Updated Order {order_number} status to {updated_status}")
+                else:
+                    print(f"Order {order_number} not found for CREATE_PAYMENT event")
+

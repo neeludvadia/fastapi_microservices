@@ -13,7 +13,7 @@ from src.core.rate_limiter import rate_limiter
 router = APIRouter(
     prefix="/products",
     tags=["Products"],
-    dependencies=[Depends(verify_token), Depends(rate_limiter(max_requests=100, window_seconds=60))]
+    dependencies=[Depends(rate_limiter(max_requests=100, window_seconds=60))]
 )
 
 # ==========================================
@@ -37,6 +37,7 @@ def get_catalog_service(session: Session = Depends(get_session)) -> CatalogServi
 @router.post("/")
 async def create_product(
     product_data: CreateProductRequest, 
+    token_data: dict = Depends(verify_token),
     service: CatalogService = Depends(get_catalog_service)
 ):
     # The service connects to the repository, which uses SQLModel to insert to Postgres!
@@ -63,6 +64,7 @@ def get_product(id: int, service: CatalogService = Depends(get_catalog_service))
 async def update_product(
     id: int, 
     product_data: UpdateProductRequest, 
+    token_data: dict = Depends(verify_token),
     service: CatalogService = Depends(get_catalog_service)
 ):
     updated_item = await service.update_product(id, product_data)
@@ -70,6 +72,21 @@ async def update_product(
 
 
 @router.delete("/{id}")
-async def delete_product(id: int, service: CatalogService = Depends(get_catalog_service)):
+async def delete_product(
+    id: int, 
+    token_data: dict = Depends(verify_token),
+    service: CatalogService = Depends(get_catalog_service)
+):
     deleted_item = await service.delete_product(id)
     return {"message": f"Product {id} deleted", "data": deleted_item}
+
+
+@router.post("/stock")
+def get_product_stock(
+    data: dict,
+    service: CatalogService = Depends(get_catalog_service)
+):
+    # Expects body like {"ids": [1, 2, 3]}
+    ids = data.get("ids", [])
+    return service.get_product_stock(ids)
+

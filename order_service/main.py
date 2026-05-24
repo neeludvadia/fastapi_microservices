@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from src.core.database import create_db_and_tables
 from src.broker.kafka_producer import get_kafka_producer
+from src.broker.kafka_consumer import get_kafka_consumer
 from src.api.cart_routes import router as cart_router
 from src.api.order_routes import router as order_router
 from src.core.rate_limiter import get_redis_client, close_redis_client
@@ -14,14 +15,19 @@ APP_PORT = int(os.getenv("APP_PORT", 8002))
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
+    
     producer = get_kafka_producer()
     await producer.start()
+    
+    consumer = get_kafka_consumer()
+    await consumer.start()
     
     # Initialize Redis connection for rate limiting
     await get_redis_client()
     
     yield
     
+    await consumer.stop()
     await producer.stop()
     await close_redis_client()
 

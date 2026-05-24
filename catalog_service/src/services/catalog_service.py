@@ -55,16 +55,16 @@ class CatalogService:
         event = message.get("event")
         data = message.get("data", {})
         
-        if event == "OrderCreated":
-            items = data.get("items", [])
+        if event in ("CREATE_ORDER", "OrderCreated"):
+            items = data.get("orderItems") or data.get("items") or []
             for item in items:
                 # Need to update product stock
                 try:
-                    # In order service, item_name was mistakenly used for product_id.
-                    # We updated order service to send product_id in Phase 1.
-                    # Fallback to int() parsing if needed.
-                    product_id = int(item.get("product_id"))
-                    qty = int(item.get("qty"))
+                    product_id = item.get("product_id") or item.get("productId")
+                    if product_id is None:
+                        continue
+                    product_id = int(product_id)
+                    qty = int(item.get("qty", 0))
                     
                     product = self.get_product(product_id)
                     new_stock = max(0, product.stock - qty)
@@ -72,6 +72,7 @@ class CatalogService:
                     await self.update_product(product_id, UpdateProductRequest(stock=new_stock))
                     print(f"Decreased stock for product {product_id} by {qty}. New stock: {new_stock}")
                 except Exception as e:
-                    print(f"Error updating stock for product in OrderCreated event: {e}")
+                    print(f"Error updating stock for product in CREATE_ORDER event: {e}")
+
                     
 # Triggering hot reload

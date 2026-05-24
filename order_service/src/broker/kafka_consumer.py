@@ -5,9 +5,9 @@ import logging
 from aiokafka import AIOKafkaConsumer
 from src.core.database import engine
 from sqlmodel import Session
-from src.repository.catalog_repository import CatalogRepository
-from src.services.catalog_service import CatalogService
-from src.services.elasticsearch_service import get_elasticsearch_service
+from src.repository.order_repository import OrderRepository
+from src.repository.cart_repository import CartRepository
+from src.services.order_service import OrderService
 
 logger = logging.getLogger(__name__)
 
@@ -52,11 +52,10 @@ class KafkaConsumerClient:
         if not message:
             return
             
-        # Create a new DB session for processing this message
         with Session(engine) as session:
-            repository = CatalogRepository(session)
-            es_service = get_elasticsearch_service()
-            service = CatalogService(repository, es_service)
+            order_repo = OrderRepository(session)
+            cart_repo = CartRepository(session)
+            service = OrderService(order_repo, cart_repo)
             await service.handle_broker_message(message)
 
 # Singleton instance
@@ -66,6 +65,6 @@ def get_kafka_consumer() -> KafkaConsumerClient:
     global kafka_consumer
     if kafka_consumer is None:
         broker_url = os.getenv("KAFKA_BROKER_URL", "localhost:9092")
-        group_id = os.getenv("GROUP_ID", "catalog-service-group")
-        kafka_consumer = KafkaConsumerClient(broker_url, "CatalogEvents", group_id)
+        group_id = os.getenv("GROUP_ID", "order-service-group")
+        kafka_consumer = KafkaConsumerClient(broker_url, "OrderEvents", group_id)
     return kafka_consumer

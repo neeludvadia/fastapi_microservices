@@ -18,7 +18,7 @@ def get_cart_service(session: Session = Depends(get_session)) -> CartService:
     return CartService(repository)
 
 @router.post("")
-def add_to_cart(
+async def add_to_cart(
     data: CartRequestInput,
     token_data: dict = Depends(verify_token),
     service: CartService = Depends(get_cart_service)
@@ -28,35 +28,35 @@ def add_to_cart(
         from fastapi import HTTPException, status
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
         
-    response = service.create_cart(int(customer_id), data)
+    response = await service.create_cart(int(customer_id), data)
     return response
 
 @router.get("")
-def get_cart(
+async def get_cart(
     token_data: dict = Depends(verify_token),
     service: CartService = Depends(get_cart_service)
 ):
     customer_id = token_data.get("sub") or token_data.get("id")
-    response = service.get_cart(int(customer_id))
+    response = await service.get_cart(int(customer_id))
     return response
 
 @router.patch("/{line_item_id}")
-def update_cart_item(
+async def update_cart_item(
     line_item_id: int,
     data: EditCartRequest,
     token_data: dict = Depends(verify_token),
     service: CartService = Depends(get_cart_service)
 ):
     customer_id = token_data.get("sub") or token_data.get("id")
-    response = service.edit_cart(int(customer_id), line_item_id, data)
+    response = await service.edit_cart(int(customer_id), line_item_id, data)
     return response
 
 @router.delete("/{line_item_id}")
-def delete_cart_item(
+async def delete_cart_item(
     line_item_id: int,
     token_data: dict = Depends(verify_token),
     service: CartService = Depends(get_cart_service)
 ):
     customer_id = token_data.get("sub") or token_data.get("id")
-    response = service.delete_cart_item(int(customer_id), line_item_id)
+    response = await service.delete_cart_item(int(customer_id), line_item_id)
     return response
